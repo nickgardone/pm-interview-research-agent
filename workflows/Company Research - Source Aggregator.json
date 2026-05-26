@@ -214,13 +214,15 @@
     },
     {
       "parameters": {
-        "height": 240
+        "content": "### AI-Powered Company Research + PM Interview Preparation Workflow\n\n\n**Summary:** This workflow automates the creation of high-quality product management interview preparation materials using AI-driven research aggregation, source analysis, strategic synthesis, and Google Docs generation.\n\nThe system is designed to help candidates rapidly prepare for PM interviews at target companies by transforming scattered web research into structured, interview-ready intelligence.\n\n**What This Workflow Does**\n\nThe workflow:\n\nAccepts a target company + role context\nGenerates strategic research queries\nSearches the web for relevant PM interview and company intelligence\nDeduplicates and scores research sources\nFilters and ranks the highest-value sources\nUses AI to synthesize strategic insights from the selected sources\nProduces two separate deliverables:\nExecutive PM Interview Prep Brief\nDeep Research Knowledge Packet for NotebookLM\nAutomatically creates and populates formatted Google Docs\n\n**Intended Outcome**\n\nThe end result is a scalable AI research agent capable of generating high-quality PM interview preparation materials in minutes rather than hours.\n\nThe workflow is intended to:\n\nimprove interview readiness\naccelerate company research\nreduce manual prep work\ncreate reusable research knowledge bases\nsupport strategic interview preparation at scale\n\nLong-term, this architecture can evolve into:\n\npersistent company intelligence systems\nAI-powered career preparation agents\nreusable strategic research infrastructure\nautomated consulting and market research workflows\nCurrent Deliverables",
+        "height": 864,
+        "width": 640
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -416,
-        -112
+        -768,
+        -160
       ],
       "id": "9f120822-96db-44d8-b2df-5e6fadcf453a",
       "name": "Sticky Note"
@@ -355,8 +357,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1952,
-        0
+        1824,
+        -192
       ],
       "id": "9cd7ca1f-1194-4158-aec0-07199a4d204d",
       "name": "Merge Source Scores"
@@ -399,8 +401,8 @@
       "type": "n8n-nodes-base.filter",
       "typeVersion": 2.3,
       "position": [
-        2160,
-        0
+        2032,
+        -192
       ],
       "id": "052721d5-6f35-4616-bde6-e3b004330551",
       "name": "Filter High-Value Sources"
@@ -412,8 +414,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2368,
-        0
+        2240,
+        -192
       ],
       "id": "64cc29aa-358a-4764-a5cc-97c48d7f5cdd",
       "name": "Sort Sources by Quality"
@@ -425,21 +427,21 @@
       "type": "n8n-nodes-base.limit",
       "typeVersion": 1,
       "position": [
-        2576,
-        0
+        2448,
+        -192
       ],
       "id": "ce532e13-984a-48a5-ba7d-c809a6606140",
       "name": "Limit Top Sources"
     },
     {
       "parameters": {
-        "jsCode": "const items = $input.all();\n\nif (!items.length) {\n  return [\n    {\n      json: {\n        error: \"No sources available\"\n      }\n    }\n  ];\n}\n\nconst first = items[0].json;\n\nconst topSources = items.map((item) => {\n  const source = item.json;\n\n  return {\n    rank: source.rank,\n    title: source.title,\n    url: source.url,\n    normalized_url: source.normalized_url,\n    source_type: source.source_type,\n    source_category: source.source_category,\n    source_quality_score: source.source_quality_score,\n    notebooklm_priority: source.notebooklm_priority,\n    primary_value: source.primary_value,\n    source_summary: source.source_summary,\n    suggested_use: source.suggested_use,\n    snippet: source.snippet,\n    matched_queries: source.matched_queries || [],\n    risk_flags: source.risk_flags || []\n  };\n});\n\nconst manifestMarkdown = `# ${first.company} PM Interview Research Source Manifest\n\n## Interview Context\n\n- Company: ${first.company}\n- Target Role Level: ${first.role_level}\n- Industry / Space: ${first.industry}\n- Research Depth: ${first.research_depth}\n- Total Sources Selected: ${topSources.length}\n\n## Priority Sources for NotebookLM\n\n${topSources.map(source => `\n### ${source.rank}. ${source.title}\n\n**URL:** ${source.url}\n\n**Source Type:** ${source.source_type}\n\n**NotebookLM Priority:** ${source.notebooklm_priority}\n\n**Quality Score:** ${source.source_quality_score}/10\n\n**Primary Value:** ${source.primary_value}\n\n**Why This Source Matters:** ${source.source_summary}\n\n**Suggested Use:** ${source.suggested_use}\n\n`).join(\"\\n\")}\n\n## Suggested NotebookLM Setup Instructions\n\nCreate a new NotebookLM notebook named:\n\n${first.company} - PM Interview Prep\n\nAdd the URLs above as sources. Then use the following prompts inside NotebookLM:\n\n1. Summarize the company strategy and product direction based only on these sources.\n2. Identify likely PM interview themes for a ${first.role_level} role.\n3. Generate product sense, execution, strategy, and behavioral interview questions.\n4. Identify customer pain points, product opportunities, and competitive risks.\n5. Create a 30-minute interview prep briefing for me.\n`;\n\nreturn [\n  {\n    json: {\n      company: first.company,\n      role_level: first.role_level,\n      industry: first.industry,\n      research_depth: first.research_depth,\n      source_count: topSources.length,\n      top_sources: topSources,\n      manifest_markdown: manifestMarkdown\n    }\n  }\n];"
+        "jsCode": "const sourceItems = $('Limit Top Sources').all();\nconst deepPacketItems = $('Generate Deep Source Research Packet').all();\n\nif (!sourceItems.length) {\n  return [{ json: { error: \"No sources available\" } }];\n}\n\nconst first = sourceItems[0].json;\n\nconst deepResearchPacket = deepPacketItems\n  .map(item => item.json.output || item.json.text || item.json.response || \"\")\n  .filter(Boolean)\n  .join(\"\\n\\n---\\n\\n\");\n\nconst topSources = sourceItems.map((item) => {\n  const source = item.json;\n\n  return {\n    rank: source.rank,\n    title: source.title,\n    url: source.url,\n    normalized_url: source.normalized_url,\n    source_type: source.source_type,\n    source_category: source.source_category,\n    source_quality_score: source.source_quality_score,\n    notebooklm_priority: source.notebooklm_priority,\n    primary_value: source.primary_value,\n    source_summary: source.source_summary,\n    suggested_use: source.suggested_use,\n    snippet: source.snippet,\n    matched_queries: source.matched_queries || [],\n    risk_flags: source.risk_flags || []\n  };\n});\n\nconst manifestMarkdown = `# ${first.company} PM Interview Research Source Manifest\n\n## Interview Context\n\n- Company: ${first.company}\n- Target Role Level: ${first.role_level}\n- Industry / Space: ${first.industry}\n- Research Depth: ${first.research_depth}\n- Total Sources Selected: ${topSources.length}\n\n## Priority Sources for NotebookLM\n\n${topSources.map(source => `\n### ${source.rank}. ${source.title}\n\n**URL:** ${source.url}\n\n**Source Type:** ${source.source_type}\n\n**NotebookLM Priority:** ${source.notebooklm_priority}\n\n**Quality Score:** ${source.source_quality_score}/10\n\n**Primary Value:** ${source.primary_value}\n\n**Why This Source Matters:** ${source.source_summary}\n\n**Suggested Use:** ${source.suggested_use}\n\n**Available Source Snippet:** ${source.snippet || \"No snippet available.\"}\n\n`).join(\"\\n\")}\n\n## Deep Source Research Packet\n\n${deepResearchPacket || \"No deep research packet generated.\"}\n`;\n\nreturn [\n  {\n    json: {\n      company: first.company,\n      role_level: first.role_level,\n      industry: first.industry,\n      research_depth: first.research_depth,\n      source_count: topSources.length,\n      top_sources: topSources,\n      deep_research_packet: deepResearchPacket,\n      manifest_markdown: manifestMarkdown\n    }\n  }\n];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2784,
-        0
+        2368,
+        128
       ],
       "id": "ce4a7697-cb5d-4698-8fb9-7ffbf9707eb0",
       "name": "Generate Source Manifest"
@@ -454,8 +456,8 @@
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
       "position": [
-        2992,
-        0
+        2736,
+        208
       ],
       "id": "dd76b64c-0111-4a4a-871b-e599c176901e",
       "name": "Generate Final Interview Brief"
@@ -476,8 +478,8 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.3,
       "position": [
-        2864,
-        208
+        2704,
+        448
       ],
       "id": "e0ca9fce-b501-4855-906e-42ac0195610d",
       "name": "OpenAI Chat Model2",
@@ -495,21 +497,21 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        3168,
-        208
+        2912,
+        432
       ],
       "id": "363fc341-c731-4ec9-abe2-80503e649dca",
       "name": "Structured Output Parser2"
     },
     {
       "parameters": {
-        "jsCode": "const briefItem = $input.first().json;\nconst manifestItem = $('Generate Source Manifest').first().json;\n\nconst brief = briefItem.output || briefItem;\n\nconst finalMarkdown = `# ${manifestItem.company} PM Interview Prep Brief\n\n## Role Context\n\n- Company: ${manifestItem.company}\n- Target Role: ${manifestItem.role_level}\n- Industry / Space: ${manifestItem.industry}\n- Research Depth: ${manifestItem.research_depth}\n- Sources Reviewed: ${manifestItem.source_count}\n\n---\n\n## Executive Summary\n\n${brief.executive_summary}\n\n---\n\n## Company Priorities\n\n${(brief.company_priorities || []).map(item => `- ${item}`).join(\"\\n\")}\n\n---\n\n## Product Strategy Signals\n\n${(brief.product_strategy_signals || []).map(item => `\n### ${item.signal}\n\n${item.why_it_matters}\n`).join(\"\\n\")}\n\n---\n\n## Likely PM Interview Themes\n\n${(brief.likely_pm_interview_themes || []).map(item => `- ${item}`).join(\"\\n\")}\n\n---\n\n## Likely Interview Questions\n\n${(brief.likely_interview_questions || []).map(item => `\n### ${item.question}\n\n**Type:** ${item.question_type}\n\n**How to Answer:** ${item.how_to_answer}\n`).join(\"\\n\")}\n\n---\n\n## Strong Talking Points\n\n${(brief.strong_talking_points || []).map(item => `- ${item}`).join(\"\\n\")}\n\n---\n\n## Product Opportunity Hypotheses\n\n${(brief.product_opportunity_hypotheses || []).map(item => `\n### ${item.hypothesis}\n\n${item.why_it_is_plausible}\n`).join(\"\\n\")}\n\n---\n\n## Risks / Unknowns to Validate\n\n${(brief.risks_or_unknowns || []).map(item => `- ${item}`).join(\"\\n\")}\n\n---\n\n## Recommended NotebookLM Prompts\n\n${(brief.recommended_notebooklm_prompts || []).map(item => `- ${item}`).join(\"\\n\")}\n\n---\n\n## 30-Minute Prep Plan\n\n${(brief.thirty_minute_prep_plan || []).map(item => `\n### ${item.minutes}\n\n${item.activity}\n`).join(\"\\n\")}\n\n---\n\n## Final Candidate Advice\n\n${brief.final_candidate_advice}\n\n---\n\n${manifestItem.manifest_markdown}\n`;\n\nfunction cleanMarkdown(value) {\n  return String(value || \"\")\n    .replace(/\\r\\n/g, \"\\n\")\n    .replace(/\\\\r\\\\n/g, \"\\n\")\n    .replace(/\\\\n/g, \"\\n\")\n    .replace(/\\\\t/g, \"\\t\")\n    .replace(/\\n{3,}/g, \"\\n\\n\")\n    .trim();\n}\n\nconst cleanedMarkdown = cleanMarkdown(finalMarkdown);\n\nreturn [\n  {\n    json: {\n      company: manifestItem.company,\n      role_level: manifestItem.role_level,\n      industry: manifestItem.industry,\n      research_depth: manifestItem.research_depth,\n      source_count: manifestItem.source_count,\n      top_sources: manifestItem.top_sources,\n      source_manifest_markdown: manifestItem.manifest_markdown,\n      interview_brief: brief,\n\n      final_markdown: String(cleanedMarkdown)\n        .replace(/\\\\n/g, '\\n')\n        .replace(/\\\\t/g, '\\t')\n        .replace(/\\n{3,}/g, '\\n\\n')\n        .trim()\n    }\n  }\n];"
+        "jsCode": "const briefItem = $input.first().json;\nconst manifestItem = $('Generate Source Manifest').first().json;\n\nconst brief = briefItem.output || briefItem;\n\nfunction cleanMarkdown(value) {\n  return String(value || \"\")\n    .replace(/\\r\\n/g, \"\\n\")\n    .replace(/\\\\r\\\\n/g, \"\\n\")\n    .replace(/\\\\n/g, \"\\n\")\n    .replace(/\\\\t/g, \"\\t\")\n    .replace(/\\n{3,}/g, \"\\n\\n\")\n    .trim();\n}\n\nconst finalMarkdown = `# ${manifestItem.company} PM Interview Prep Brief\n\n## Role Context\n\n- Company: ${manifestItem.company}\n- Target Role: ${manifestItem.role_level}\n- Industry / Space: ${manifestItem.industry}\n- Research Depth: ${manifestItem.research_depth}\n- Sources Reviewed: ${manifestItem.source_count}\n\n---\n\n## Executive Summary\n\n${brief.executive_summary}\n\n---\n\n## Company Priorities\n\n${(brief.company_priorities || []).map(item => `- ${item}`).join(\"\\n\")}\n\n---\n\n## Product Strategy Signals\n\n${(brief.product_strategy_signals || []).map(item => `\n### ${item.signal}\n\n${item.why_it_matters}\n`).join(\"\\n\")}\n\n---\n\n## Likely PM Interview Themes\n\n${(brief.likely_pm_interview_themes || []).map(item => `- ${item}`).join(\"\\n\")}\n\n---\n\n## Likely Interview Questions\n\n${(brief.likely_interview_questions || []).map(item => `\n### ${item.question}\n\n**Type:** ${item.question_type}\n\n**How to Answer:** ${item.how_to_answer}\n`).join(\"\\n\")}\n\n---\n\n## Strong Talking Points\n\n${(brief.strong_talking_points || []).map(item => `- ${item}`).join(\"\\n\")}\n\n---\n\n## Product Opportunity Hypotheses\n\n${(brief.product_opportunity_hypotheses || []).map(item => `\n### ${item.hypothesis}\n\n${item.why_it_is_plausible}\n`).join(\"\\n\")}\n\n---\n\n## Risks / Unknowns to Validate\n\n${(brief.risks_or_unknowns || []).map(item => `- ${item}`).join(\"\\n\")}\n\n---\n\n## Recommended NotebookLM Prompts\n\n${(brief.recommended_notebooklm_prompts || []).map(item => `- ${item}`).join(\"\\n\")}\n\n---\n\n## 30-Minute Prep Plan\n\n${(brief.thirty_minute_prep_plan || []).map(item => `\n### ${item.minutes}\n\n${item.activity}\n`).join(\"\\n\")}\n\n---\n\n## Final Candidate Advice\n\n${brief.final_candidate_advice}\n`;\n\nconst cleanedMarkdown = cleanMarkdown(finalMarkdown);\n\nreturn [\n  {\n    json: {\n      company: manifestItem.company,\n      role_level: manifestItem.role_level,\n      industry: manifestItem.industry,\n      research_depth: manifestItem.research_depth,\n      source_count: manifestItem.source_count,\n      top_sources: manifestItem.top_sources,\n      interview_brief: brief,\n      final_markdown: cleanedMarkdown\n    }\n  }\n];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3344,
-        0
+        3088,
+        208
       ],
       "id": "2f73fce1-0fc5-4692-9ae6-3ee140ceb2a1",
       "name": "Merge Final Deliverables"
@@ -522,8 +524,8 @@
       "type": "n8n-nodes-base.googleDocs",
       "typeVersion": 2,
       "position": [
-        3552,
-        0
+        3296,
+        208
       ],
       "id": "4e14fd26-b85a-4888-9086-4a73e2b9fd6d",
       "name": "Create Google Interview Brief Doc",
@@ -536,13 +538,13 @@
     },
     {
       "parameters": {
-        "jsCode": "const doc = $('Create Google Interview Brief Doc').first().json;\nconst brief = $('Merge Final Deliverables').first().json;\n\nfunction cleanText(value) {\n  return String(value || \"\")\n    .replace(/\\\\\\\\n/g, \"\\n\")\n    .replace(/\\\\n/g, \"\\n\")\n    .replace(/\\\\\\\\t/g, \"\\t\")\n    .replace(/\\\\t/g, \"\\t\")\n    .replace(/\\r\\n/g, \"\\n\")\n    .replace(/\\n{3,}/g, \"\\n\\n\")\n    .trim();\n}\n\nconst cleanBrief = cleanText(brief.final_markdown);\n\nreturn [\n  {\n    json: {\n      document_id: doc.id,\n      request_body: {\n        requests: [\n          {\n            insertText: {\n              location: {\n                index: 1\n              },\n              text: cleanBrief\n            }\n          }\n        ]\n      }\n    }\n  }\n];"
+        "jsCode": "const doc = $('Create Google Interview Brief Doc').first().json;\nconst brief = $('Merge Final Deliverables').first().json;\n\nfunction cleanText(value) {\n  return String(value || \"\")\n    .replace(/\\\\\\\\n/g, \"\\n\")\n    .replace(/\\\\n/g, \"\\n\")\n    .replace(/\\\\\\\\t/g, \"\\t\")\n    .replace(/\\\\t/g, \"\\t\")\n    .replace(/\\r\\n/g, \"\\n\")\n    .replace(/\\n{3,}/g, \"\\n\\n\")\n    .trim();\n}\n\nfunction processBold(text, baseIndex, styleRequests) {\n  let output = \"\";\n  let cursor = 0;\n  const regex = /\\*\\*(.*?)\\*\\*/g;\n  let match;\n\n  while ((match = regex.exec(text)) !== null) {\n    output += text.slice(cursor, match.index);\n\n    const boldText = match[1];\n    const boldStart = baseIndex + output.length;\n    output += boldText;\n    const boldEnd = baseIndex + output.length;\n\n    styleRequests.push({\n      updateTextStyle: {\n        range: {\n          startIndex: boldStart,\n          endIndex: boldEnd\n        },\n        textStyle: {\n          bold: true\n        },\n        fields: \"bold\"\n      }\n    });\n\n    cursor = match.index + match[0].length;\n  }\n\n  output += text.slice(cursor);\n  return output;\n}\n\nconst rawMarkdown = cleanText(brief.final_markdown);\nconst lines = rawMarkdown.split(\"\\n\");\n\nlet finalText = \"\";\nconst formattingRequests = [];\n\nfor (const line of lines) {\n  const lineStart = 1 + finalText.length;\n  let outputLine = line;\n  let paragraphStyle = null;\n  let makeBullet = false;\n\n  if (line.startsWith(\"# \")) {\n    outputLine = line.replace(/^# /, \"\");\n    paragraphStyle = \"HEADING_1\";\n  } else if (line.startsWith(\"## \")) {\n    outputLine = line.replace(/^## /, \"\");\n    paragraphStyle = \"HEADING_2\";\n  } else if (line.startsWith(\"### \")) {\n    outputLine = line.replace(/^### /, \"\");\n    paragraphStyle = \"HEADING_3\";\n  } else if (line.trim() === \"---\") {\n    outputLine = \"────────────────────────────\";\n  } else if (line.startsWith(\"- \")) {\n    outputLine = line.replace(/^- /, \"\");\n    makeBullet = true;\n  }\n\n  outputLine = processBold(outputLine, lineStart, formattingRequests);\n\n  finalText += outputLine + \"\\n\";\n\n  const lineEnd = 1 + finalText.length;\n\n  if (paragraphStyle) {\n    formattingRequests.push({\n      updateParagraphStyle: {\n        range: {\n          startIndex: lineStart,\n          endIndex: lineEnd\n        },\n        paragraphStyle: {\n          namedStyleType: paragraphStyle\n        },\n        fields: \"namedStyleType\"\n      }\n    });\n  }\n\n  if (makeBullet && outputLine.trim()) {\n    formattingRequests.push({\n      createParagraphBullets: {\n        range: {\n          startIndex: lineStart,\n          endIndex: lineEnd\n        },\n        bulletPreset: \"BULLET_DISC_CIRCLE_SQUARE\"\n      }\n    });\n  }\n}\n\nreturn [\n  {\n    json: {\n      document_id: doc.id,\n      request_body: {\n        requests: [\n          {\n            insertText: {\n              location: {\n                index: 1\n              },\n              text: finalText.trim()\n            }\n          },\n          ...formattingRequests\n        ]\n      }\n    }\n  }\n];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3760,
-        0
+        3504,
+        208
       ],
       "id": "c9ddfa89-0a08-4b1b-997a-4ef82b542b3f",
       "name": "Prepare Google Docs Insert Payload"
@@ -561,11 +563,113 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        3952,
-        0
+        3696,
+        208
       ],
       "id": "1b9c2e9a-5064-419b-bec2-514d057defc0",
       "name": "Insert Brief Content into Google Doc",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "vg4suziTmU1mlBsh",
+          "name": "Google Docs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Create a deep strategic research packet for NotebookLM using the following high-quality research sources.\n\nYour goal is to synthesize the sources into a highly useful interview preparation knowledge base for a product management candidate.\n\nThe output should include:\n\n1. Company strategic priorities\n2. Product strategy signals and themes\n3. Competitive landscape insights\n4. Market dynamics\n5. Organizational or leadership signals\n6. Potential PM interview themes\n7. Likely product sense interview areas\n8. Likely execution interview areas\n9. Likely behavioral interview areas\n10. Product opportunities implied by the research\n11. Risks or strategic unknowns\n12. Contradictions or differing perspectives across sources\n13. Important quotes, data points, or observations from the sources\n14. A synthesized “what this means for a PM candidate” section\n15. A detailed NotebookLM-ready research knowledge base section that summarizes the important insights from EACH source individually\n\nCompany:\n{{ $('Normalize Intake Data').first().json.company_name }}\n\nRole:\n{{ $('Normalize Intake Data').first().json.role_level }}\n\nIndustry:\n{{ $('Normalize Intake Data').first().json.industry }}\n\nResearch Sources:\n{{ JSON.stringify($input.all().map(i => i.json), null, 2) }}",
+        "options": {
+          "systemMessage": "You are an elite AI research analyst helping create a deep research packet for NotebookLM.\n\nYour job is to transform raw web research sources into rich strategic research material for interview preparation.\n\nFor EACH source provided:\n\n1. Summarize the source in detail\n2. Extract key strategic/product/business insights\n3. Explain why the source matters for a Product Manager interview\n4. Extract likely interview themes\n5. Extract competitive/product/company insights\n6. Include the most important source snippets or evidence\n7. Identify product strategy implications\n8. Explain what an interview candidate should learn from the source\n\nWrite in a structured markdown format.\n\nDO NOT be brief.\nDO NOT summarize across sources.\nTreat each source as a standalone research artifact.\n\nOutput rich, NotebookLM-friendly research material."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        2032,
+        128
+      ],
+      "id": "e4fa901c-e884-4e6b-87e8-d7c80e50b243",
+      "name": "Generate Deep Source Research Packet"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        2032,
+        336
+      ],
+      "id": "4331b5c0-dce6-4350-9f59-7b6bba6a715f",
+      "name": "OpenAI Chat Model3",
+      "credentials": {
+        "openAiApi": {
+          "id": "6VodX8z277PglBiU",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "folderId": "13XoM4qPSU7U9rz1WMbL0PBOt0OTiG4RQ",
+        "title": "={{ $json.company }} Full Research Packet"
+      },
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        2752,
+        -48
+      ],
+      "id": "a4d775ac-c8de-4b5d-8cfd-83c784ffc4e2",
+      "name": "Create Research Packet Doc",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "vg4suziTmU1mlBsh",
+          "name": "Google Docs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const doc = $('Create Research Packet Doc').first().json;\nconst manifest = $('Generate Source Manifest').first().json;\n\nfunction cleanText(value) {\n  return String(value || \"\")\n    .replace(/\\\\\\\\n/g, \"\\n\")\n    .replace(/\\\\n/g, \"\\n\")\n    .replace(/\\\\\\\\t/g, \"\\t\")\n    .replace(/\\\\t/g, \"\\t\")\n    .replace(/\\r\\n/g, \"\\n\")\n    .replace(/\\n{3,}/g, \"\\n\\n\")\n    .trim();\n}\n\nconst researchPacketMarkdown = `# ${manifest.company} Full Research Packet\n\n## Interview Context\n\n- Company: ${manifest.company}\n- Target Role Level: ${manifest.role_level}\n- Industry / Space: ${manifest.industry}\n- Research Depth: ${manifest.research_depth}\n- Sources Selected: ${manifest.source_count}\n\n---\n\n## Deep Source Research Packet\n\n${manifest.deep_research_packet || \"No deep research packet available.\"}\n\n---\n\n## Source Manifest\n\n${manifest.manifest_markdown || \"\"}\n`;\n\nconst cleanPacket = cleanText(researchPacketMarkdown);\n\nreturn [\n  {\n    json: {\n      document_id: doc.id,\n      request_body: {\n        requests: [\n          {\n            insertText: {\n              location: {\n                index: 1\n              },\n              text: cleanPacket\n            }\n          }\n        ]\n      }\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2960,
+        -48
+      ],
+      "id": "b0a9a221-b6d8-430a-9058-0fad9376d423",
+      "name": "Prepare Research Packet Payload"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://docs.googleapis.com/v1/documents/{{ $json.document_id }}:batchUpdate",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDocsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.request_body) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        3168,
+        -48
+      ],
+      "id": "c44e087c-e6a2-4c36-9cd7-8733b68f2d12",
+      "name": "Insert Research Packet Content",
       "credentials": {
         "googleDocsOAuth2Api": {
           "id": "vg4suziTmU1mlBsh",
@@ -745,7 +849,7 @@
       "main": [
         [
           {
-            "node": "Generate Source Manifest",
+            "node": "Generate Deep Source Research Packet",
             "type": "main",
             "index": 0
           }
@@ -755,6 +859,11 @@
     "Generate Source Manifest": {
       "main": [
         [
+          {
+            "node": "Create Research Packet Doc",
+            "type": "main",
+            "index": 0
+          },
           {
             "node": "Generate Final Interview Brief",
             "type": "main",
@@ -828,6 +937,50 @@
           }
         ]
       ]
+    },
+    "Generate Deep Source Research Packet": {
+      "main": [
+        [
+          {
+            "node": "Generate Source Manifest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate Deep Source Research Packet",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Research Packet Doc": {
+      "main": [
+        [
+          {
+            "node": "Prepare Research Packet Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Research Packet Payload": {
+      "main": [
+        [
+          {
+            "node": "Insert Research Packet Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
@@ -835,7 +988,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "c63936ab-daf0-457a-90f2-a74c8497043a",
+  "versionId": "6a1f4743-2ece-4ce1-ab90-0675e252939a",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "88b7a8b38a44e9675c489c99705a7d61053b95d7ad22e8c917901d856909164a"
