@@ -1,0 +1,998 @@
+{
+  "name": "Company Research - Source Aggregator",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "PM Job Hunt Company Research Intake",
+        "formDescription": "Submit a company and role to generate a NotebookLM-ready interview research packet.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "company_name",
+              "placeholder": "figma",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "role_url",
+              "placeholder": "https://company.com/careers/product-manager-role"
+            },
+            {
+              "fieldLabel": "role_level",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Product Manager"
+                  },
+                  {
+                    "option": "Senior Product Manager"
+                  },
+                  {
+                    "option": "Lead Product Manager"
+                  },
+                  {
+                    "option": "Staff Product Manager"
+                  },
+                  {
+                    "option": "Principal Product Manager"
+                  },
+                  {
+                    "option": "Director of Product Management"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "industry_or_space",
+              "placeholder": "B2B SaaS, fintech, healthcare, AI, marketplace, etc."
+            },
+            {
+              "fieldLabel": "research_depth",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Quick scan"
+                  },
+                  {
+                    "option": "Standard prep"
+                  },
+                  {
+                    "option": "Deep research"
+                  }
+                ]
+              }
+            },
+            {
+              "fieldLabel": "specific_focus_areas",
+              "fieldType": "textarea",
+              "placeholder": "AI strategy, product culture, enterprise growth, customer complaints, pricing, competitors"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.5,
+      "position": [
+        0,
+        0
+      ],
+      "id": "f3994067-185e-4139-b87f-38cecc3fe3b0",
+      "name": "On form submission",
+      "webhookId": "c2d849d0-041a-491a-ae9a-483aa5b6b5e2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cff788b7-c72b-4fdf-b921-37013016b1e4",
+              "name": "company_name",
+              "value": "={{ $json.company_name.trim() }}",
+              "type": "string"
+            },
+            {
+              "id": "071ea7cb-cc86-4afa-9da2-1a819aae3b0a",
+              "name": "company_slug",
+              "value": "={{ $json.company_name\n  .toLowerCase()\n  .replace(/[^a-z0-9]+/g, \"-\")\n  .replace(/^-|-$/g, \"\")\n}}",
+              "type": "string"
+            },
+            {
+              "id": "2cdc0563-45a6-463f-ab9c-1d63dc6226af",
+              "name": "role_url",
+              "value": "={{ $json.role_url || \"\" }}",
+              "type": "string"
+            },
+            {
+              "id": "c31162cc-5ccc-47cb-8196-6e24e30d77db",
+              "name": "role_level",
+              "value": "={{ $json.role_level }}",
+              "type": "string"
+            },
+            {
+              "id": "1b86a811-8772-4875-a5ba-d1db081f9fc7",
+              "name": "industry",
+              "value": "={{ $json.industry_or_space || \"unknown\" }}",
+              "type": "string"
+            },
+            {
+              "id": "d1be6bd8-ebb2-41aa-a2ca-dc4ccca0406e",
+              "name": "research_depth",
+              "value": "={{ $json.research_depth }}",
+              "type": "string"
+            },
+            {
+              "id": "bc26fea6-9aad-4855-b51e-1e89e6e65bc8",
+              "name": "focus_areas",
+              "value": "={{ $json.specific_focus_areas || \"\" }}",
+              "type": "string"
+            },
+            {
+              "id": "745ee690-9369-4ba2-b8a5-aa5799fd9c11",
+              "name": "created_at",
+              "value": "={{ new Date().toISOString() }}",
+              "type": "string"
+            },
+            {
+              "id": "a54b306e-b615-46e3-ae70-47dd64bca4e4",
+              "name": "research_session_id",
+              "value": "={{ $json.company_name.toLowerCase().replace(/[^a-z0-9]/g, \"-\") + \"-\" + Date.now() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        208,
+        0
+      ],
+      "id": "5bd656ee-d348-4ea8-a43e-f3cfde59daab",
+      "name": "Normalize Intake Data"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a research planning agent helping a senior product manager prepare for product management interviews.\n\nYour job is to create a focused research plan for one company and one target PM role.\n\nUse the input data below:\n\nCompany name: {{ $json.company_name }}\nCompany slug: {{ $json.company_slug }}\nRole URL: {{ $json.role_url }}\nTarget role level: {{ $json.role_level }}\nIndustry or space: {{ $json.industry }}\nResearch depth: {{ $json.research_depth }}\nSpecific focus areas: {{ $json.focus_areas }}\n\nCreate a structured research plan that will later be used by search and extraction agents.\n\nThe plan should help prepare for a PM interview by identifying:\n1. what to research\n2. which source categories matter most\n3. what search queries should be run\n4. what PM interview angles to prepare for\n5. what signals would be especially valuable\n\nTailor the plan to the role level.\n\nRole-level guidance:\n- Product Manager: emphasize execution, metrics, product sense, prioritization, user problems.\n- Senior Product Manager: emphasize strategy, cross-functional leadership, product tradeoffs, growth opportunities.\n- Lead Product Manager: emphasize product area ownership, stakeholder influence, roadmap strategy, team leadership.\n- Staff Product Manager: emphasize ambiguous problem spaces, systems thinking, strategy, influence without authority.\n- Principal Product Manager: emphasize company-level product strategy, portfolio decisions, executive communication.\n- Director of Product Management: emphasize org design, product vision, team leadership, operating cadence, business outcomes.\n\nReturn ONLY valid JSON.\nDo not wrap the JSON in markdown.\nDo not use ```json.\nReturn raw JSON only.\n\nUse this exact JSON structure:\n\n{\n  \"company\": \"\",\n  \"role_level\": \"\",\n  \"industry\": \"\",\n  \"research_depth\": \"\",\n  \"research_objectives\": [\n    {\n      \"objective\": \"\",\n      \"why_it_matters\": \"\",\n      \"priority\": \"high\"\n    }\n  ],\n  \"source_categories\": [\n    {\n      \"category\": \"\",\n      \"examples\": [],\n      \"priority\": \"high\"\n    }\n  ],\n  \"search_queries\": [\n    {\n      \"query\": \"\",\n      \"category\": \"\",\n      \"priority\": \"high\"\n    }\n  ],\n  \"interview_angles\": [\n    {\n      \"angle\": \"\",\n      \"why_it_matters\": \"\",\n      \"likely_question_type\": \"\"\n    }\n  ],\n  \"must_find_signals\": [\n    {\n      \"signal\": \"\",\n      \"why_it_matters\": \"\"\n    }\n  ]\n}",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        416,
+        0
+      ],
+      "id": "5b26bebb-fb5b-4ac2-8bef-b70975eb1970",
+      "name": "Research Planning Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        288,
+        208
+      ],
+      "id": "156540e8-cf9d-4588-bd18-a2e06208acba",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "6VodX8z277PglBiU",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"company\": \"Figma\",\n  \"role_level\": \"Senior Product Manager\",\n  \"industry\": \"Design software / collaboration SaaS\",\n  \"research_depth\": \"Standard prep\",\n  \"research_objectives\": [\n    {\n      \"objective\": \"Understand AI strategy\",\n      \"why_it_matters\": \"AI likely impacts future roadmap\",\n      \"priority\": \"high\"\n    }\n  ],\n  \"source_categories\": [\n    {\n      \"category\": \"official company sources\",\n      \"examples\": [\n        \"company blog\",\n        \"product pages\"\n      ],\n      \"priority\": \"high\"\n    }\n  ],\n  \"search_queries\": [\n    {\n      \"query\": \"Figma AI strategy 2025\",\n      \"category\": \"strategy\",\n      \"priority\": \"high\"\n    }\n  ],\n  \"interview_angles\": [\n    {\n      \"angle\": \"Enterprise product strategy\",\n      \"why_it_matters\": \"Relevant for senior PM interviews\",\n      \"likely_question_type\": \"strategy\"\n    }\n  ],\n  \"must_find_signals\": [\n    {\n      \"signal\": \"Recent AI launches\",\n      \"why_it_matters\": \"Shows company priorities\"\n    }\n  ]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        592,
+        208
+      ],
+      "id": "f99ea30f-dcc2-417c-8d25-98d40da63f0f",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "content": "### AI-Powered Company Research + PM Interview Preparation Workflow\n\n\n**Summary:** This workflow automates the creation of high-quality product management interview preparation materials using AI-driven research aggregation, source analysis, strategic synthesis, and Google Docs generation.\n\nThe system is designed to help candidates rapidly prepare for PM interviews at target companies by transforming scattered web research into structured, interview-ready intelligence.\n\n**What This Workflow Does**\n\nThe workflow:\n\nAccepts a target company + role context\nGenerates strategic research queries\nSearches the web for relevant PM interview and company intelligence\nDeduplicates and scores research sources\nFilters and ranks the highest-value sources\nUses AI to synthesize strategic insights from the selected sources\nProduces two separate deliverables:\nExecutive PM Interview Prep Brief\nDeep Research Knowledge Packet for NotebookLM\nAutomatically creates and populates formatted Google Docs\n\n**Intended Outcome**\n\nThe end result is a scalable AI research agent capable of generating high-quality PM interview preparation materials in minutes rather than hours.\n\nThe workflow is intended to:\n\nimprove interview readiness\naccelerate company research\nreduce manual prep work\ncreate reusable research knowledge bases\nsupport strategic interview preparation at scale\n\nLong-term, this architecture can evolve into:\n\npersistent company intelligence systems\nAI-powered career preparation agents\nreusable strategic research infrastructure\nautomated consulting and market research workflows\nCurrent Deliverables",
+        "height": 864,
+        "width": 640
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -768,
+        -160
+      ],
+      "id": "9f120822-96db-44d8-b2df-5e6fadcf453a",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\n\n// The AI Agent stores structured data inside `output`\nconst plan = input.output || input;\n\nconst searchQueries = plan.search_queries || [];\n\nreturn searchQueries.map((item, index) => {\n  return {\n    json: {\n      query_index: index + 1,\n      query: item.query,\n      category: item.category || \"uncategorized\",\n      priority: item.priority || \"medium\",\n\n      company: plan.company,\n      role_level: plan.role_level,\n      industry: plan.industry,\n      research_depth: plan.research_depth,\n\n      research_objectives: plan.research_objectives,\n      source_categories: plan.source_categories,\n      interview_angles: plan.interview_angles,\n      must_find_signals: plan.must_find_signals\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        768,
+        0
+      ],
+      "id": "03d61f43-37aa-4945-89be-47011f6605e1",
+      "name": "Extract Search Queries"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.tavily.com/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"api_key\": \"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\",\n  \"query\": \"{{ $json.query }}\",\n  \"search_depth\": \"basic\",\n  \"topic\": \"general\",\n  \"max_results\": 5,\n  \"include_answer\": false,\n  \"include_raw_content\": false,\n  \"include_images\": false,\n  \"include_usage\": true\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        976,
+        0
+      ],
+      "id": "380e4731-7987-4e8c-b77f-506c11052360",
+      "name": "Tavily Search"
+    },
+    {
+      "parameters": {
+        "jsCode": "const searchItems = $input.all();\nconst flattened = [];\n\nfor (let i = 0; i < searchItems.length; i++) {\n  const data = searchItems[i].json;\n\n  // Pull original query context from the Extract Search Queries node\n  const originalContext = $('Extract Search Queries').all()[i]?.json || {};\n\n  const results = data.results || [];\n\n  for (const result of results) {\n    flattened.push({\n      json: {\n        company: originalContext.company || \"unknown\",\n        role_level: originalContext.role_level || \"unknown\",\n        industry: originalContext.industry || \"unknown\",\n        research_depth: originalContext.research_depth || \"unknown\",\n\n        source_query: originalContext.query || data.query || \"\",\n        source_category: originalContext.category || \"uncategorized\",\n        source_priority: originalContext.priority || \"medium\",\n\n        title: result.title || \"\",\n        url: result.url || \"\",\n        snippet: result.content || \"\",\n        tavily_score: result.score || 0,\n        raw_content: result.raw_content || null\n      }\n    });\n  }\n}\n\nreturn flattened;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1184,
+        0
+      ],
+      "id": "5bfb1be2-945d-45f1-91c4-e93a0a96ac8e",
+      "name": "Flatten Search Results"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nconst seen = new Map();\n\nfunction normalizeUrl(url) {\n  if (!url) return \"\";\n\n  try {\n    const parsed = new URL(url);\n\n    // Remove tracking params and fragments\n    parsed.hash = \"\";\n    parsed.searchParams.delete(\"utm_source\");\n    parsed.searchParams.delete(\"utm_medium\");\n    parsed.searchParams.delete(\"utm_campaign\");\n    parsed.searchParams.delete(\"utm_content\");\n    parsed.searchParams.delete(\"utm_term\");\n    parsed.searchParams.delete(\"fbclid\");\n    parsed.searchParams.delete(\"gclid\");\n\n    // Remove trailing slash\n    return parsed.toString().replace(/\\/$/, \"\");\n  } catch (error) {\n    return url.trim().replace(/\\/$/, \"\");\n  }\n}\n\nfor (const item of items) {\n  const source = item.json;\n  const normalizedUrl = normalizeUrl(source.url);\n\n  if (!normalizedUrl) continue;\n\n  if (!seen.has(normalizedUrl)) {\n    seen.set(normalizedUrl, {\n      ...source,\n      normalized_url: normalizedUrl,\n      duplicate_count: 1,\n      matched_queries: [source.source_query],\n      matched_categories: [source.source_category]\n    });\n  } else {\n    const existing = seen.get(normalizedUrl);\n\n    existing.duplicate_count += 1;\n\n    if (source.source_query && !existing.matched_queries.includes(source.source_query)) {\n      existing.matched_queries.push(source.source_query);\n    }\n\n    if (source.source_category && !existing.matched_categories.includes(source.source_category)) {\n      existing.matched_categories.push(source.source_category);\n    }\n\n    // Keep the better Tavily score if duplicate appears with higher relevance\n    if ((source.tavily_score || 0) > (existing.tavily_score || 0)) {\n      existing.tavily_score = source.tavily_score;\n      existing.snippet = source.snippet || existing.snippet;\n      existing.title = source.title || existing.title;\n    }\n  }\n}\n\nreturn Array.from(seen.values()).map(source => ({\n  json: source\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1392,
+        0
+      ],
+      "id": "325dae31-e5cc-43cc-a299-6692b3b6d18b",
+      "name": "Deduplicate Sources"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a source quality evaluator for a Product Manager interview research workflow.\n\nYour job is to score ONE source for whether it should be included in a NotebookLM research packet for interview preparation.\n\nCompany: {{ $json.company }}\nTarget role level: {{ $json.role_level }}\nIndustry: {{ $json.industry }}\nResearch depth: {{ $json.research_depth }}\n\nSource title: {{ $json.title }}\nSource URL: {{ $json.url }}\nSource snippet: {{ $json.snippet }}\nOriginal search query: {{ $json.source_query }}\nSource category: {{ $json.source_category }}\nTavily relevance score: {{ $json.tavily_score }}\nDuplicate count: {{ $json.duplicate_count }}\nMatched queries: {{ JSON.stringify($json.matched_queries) }}\nMatched categories: {{ JSON.stringify($json.matched_categories) }}\n\nEvaluate this source using these criteria:\n\n1. PM interview usefulness\n2. Company strategy insight\n3. Product insight\n4. Customer/user insight\n5. Competitive/market insight\n6. Credibility/authority\n7. NotebookLM usefulness\n\nScoring guidance:\n- 9-10: Must include. Highly useful, authoritative, specific, interview-relevant.\n- 7-8: Strong include. Useful and relevant.\n- 5-6: Maybe include. Some value but not essential.\n- 3-4: Low value. Generic, shallow, or redundant.\n- 1-2: Exclude. Spammy, irrelevant, outdated, or weak.\n\nReturn raw JSON only.\nDo not use markdown.\nDo not include explanations outside JSON.",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1600,
+        0
+      ],
+      "id": "869fabc4-bdfc-4b81-a2bd-bf6e518c3ca1",
+      "name": "Source Quality Scoring Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        1472,
+        208
+      ],
+      "id": "1064ec18-e42d-47b5-bdf8-779de7a8af0c",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "6VodX8z277PglBiU",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"source_quality_score\": 8,\n  \"include_in_notebook\": true,\n  \"source_type\": \"official company page\",\n  \"primary_value\": \"product strategy\",\n  \"reasoning\": \"This source is an official company page with strong product and strategy relevance for PM interview preparation.\",\n  \"notebooklm_priority\": \"high\",\n  \"suggested_use\": \"Use this source to understand the company's product direction and likely interview discussion areas.\",\n  \"risk_flags\": [],\n  \"source_summary\": \"Official company source describing product capabilities and strategic direction.\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1776,
+        208
+      ],
+      "id": "999f55a1-322b-48a4-9abf-4e1783aaebd5",
+      "name": "Structured Output Parser1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const scoredItems = $input.all();\nconst originalSources = $('Deduplicate Sources').all();\n\nreturn scoredItems.map((item, index) => {\n  const score = item.json.output || item.json;\n  const source = originalSources[index]?.json || {};\n\n  return {\n    json: {\n      ...source,\n      ...score\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1824,
+        -192
+      ],
+      "id": "9cd7ca1f-1194-4158-aec0-07199a4d204d",
+      "name": "Merge Source Scores"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "e213fba9-bab8-4c87-bc0c-926630015bcd",
+              "leftValue": "={{ $json.include_in_notebook }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "d8479eb7-643e-4ef9-a00a-f98dec419b40",
+              "leftValue": "={{ $json.source_quality_score }}",
+              "rightValue": 7,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        2032,
+        -192
+      ],
+      "id": "052721d5-6f35-4616-bde6-e3b004330551",
+      "name": "Filter High-Value Sources"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nfunction priorityWeight(priority) {\n  const value = String(priority || \"\").toLowerCase();\n\n  if (value === \"high\") return 3;\n  if (value === \"medium\") return 2;\n  if (value === \"low\") return 1;\n\n  return 0;\n}\n\nconst sorted = items.sort((a, b) => {\n  const aJson = a.json;\n  const bJson = b.json;\n\n  const aScore = Number(aJson.source_quality_score || 0);\n  const bScore = Number(bJson.source_quality_score || 0);\n\n  const aPriority = priorityWeight(aJson.notebooklm_priority);\n  const bPriority = priorityWeight(bJson.notebooklm_priority);\n\n  const aTavily = Number(aJson.tavily_score || 0);\n  const bTavily = Number(bJson.tavily_score || 0);\n\n  const aDuplicates = Number(aJson.duplicate_count || 1);\n  const bDuplicates = Number(bJson.duplicate_count || 1);\n\n  // Sort descending by quality, priority, Tavily relevance, then duplicate signal\n  return (\n    bScore - aScore ||\n    bPriority - aPriority ||\n    bTavily - aTavily ||\n    bDuplicates - aDuplicates\n  );\n});\n\nreturn sorted.map((item, index) => ({\n  json: {\n    rank: index + 1,\n    ...item.json\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2240,
+        -192
+      ],
+      "id": "64cc29aa-358a-4764-a5cc-97c48d7f5cdd",
+      "name": "Sort Sources by Quality"
+    },
+    {
+      "parameters": {
+        "maxItems": 8
+      },
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        2448,
+        -192
+      ],
+      "id": "ce532e13-984a-48a5-ba7d-c809a6606140",
+      "name": "Limit Top Sources"
+    },
+    {
+      "parameters": {
+        "jsCode": "const sourceItems = $('Limit Top Sources').all();\nconst deepPacketItems = $('Generate Deep Source Research Packet').all();\n\nif (!sourceItems.length) {\n  return [{ json: { error: \"No sources available\" } }];\n}\n\nconst first = sourceItems[0].json;\n\nconst deepResearchPacket = deepPacketItems\n  .map(item => item.json.output || item.json.text || item.json.response || \"\")\n  .filter(Boolean)\n  .join(\"\\n\\n---\\n\\n\");\n\nconst topSources = sourceItems.map((item) => {\n  const source = item.json;\n\n  return {\n    rank: source.rank,\n    title: source.title,\n    url: source.url,\n    normalized_url: source.normalized_url,\n    source_type: source.source_type,\n    source_category: source.source_category,\n    source_quality_score: source.source_quality_score,\n    notebooklm_priority: source.notebooklm_priority,\n    primary_value: source.primary_value,\n    source_summary: source.source_summary,\n    suggested_use: source.suggested_use,\n    snippet: source.snippet,\n    matched_queries: source.matched_queries || [],\n    risk_flags: source.risk_flags || []\n  };\n});\n\nconst manifestMarkdown = `# ${first.company} PM Interview Research Source Manifest\n\n## Interview Context\n\n- Company: ${first.company}\n- Target Role Level: ${first.role_level}\n- Industry / Space: ${first.industry}\n- Research Depth: ${first.research_depth}\n- Total Sources Selected: ${topSources.length}\n\n## Priority Sources for NotebookLM\n\n${topSources.map(source => `\n### ${source.rank}. ${source.title}\n\n**URL:** ${source.url}\n\n**Source Type:** ${source.source_type}\n\n**NotebookLM Priority:** ${source.notebooklm_priority}\n\n**Quality Score:** ${source.source_quality_score}/10\n\n**Primary Value:** ${source.primary_value}\n\n**Why This Source Matters:** ${source.source_summary}\n\n**Suggested Use:** ${source.suggested_use}\n\n**Available Source Snippet:** ${source.snippet || \"No snippet available.\"}\n\n`).join(\"\\n\")}\n\n## Deep Source Research Packet\n\n${deepResearchPacket || \"No deep research packet generated.\"}\n`;\n\nreturn [\n  {\n    json: {\n      company: first.company,\n      role_level: first.role_level,\n      industry: first.industry,\n      research_depth: first.research_depth,\n      source_count: topSources.length,\n      top_sources: topSources,\n      deep_research_packet: deepResearchPacket,\n      manifest_markdown: manifestMarkdown\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2368,
+        128
+      ],
+      "id": "ce4a7697-cb5d-4698-8fb9-7ffbf9707eb0",
+      "name": "Generate Source Manifest"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an expert Product Management interview preparation strategist.\n\nCreate a polished interview research brief for the target company and role.\n\nUse only the source manifest and source summaries below. Do not invent facts that are not supported by the provided sources.\n\nCompany: {{ $json.company }}\nTarget role level: {{ $json.role_level }}\nIndustry: {{ $json.industry }}\nResearch depth: {{ $json.research_depth }}\nSource count: {{ $json.source_count }}\n\nSource manifest:\n{{ $json.manifest_markdown }}\n\nTop sources JSON:\n{{ JSON.stringify($json.top_sources) }}\n\nCreate a concise but high-value PM interview prep brief with these sections:\n\n1. Executive Summary\n2. What the Company Appears to Care About\n3. Product Strategy Signals\n4. Likely PM Interview Themes\n5. Likely Interview Questions\n6. Strong Talking Points I Can Use\n7. Product Opportunity Hypotheses\n8. Risks / Unknowns to Validate\n9. Recommended NotebookLM Prompts\n10. 30-Minute Prep Plan\n\nKeep it practical, specific, and useful for a Product Manager candidate.\n\nReturn raw JSON only.\nDo not use markdown.\nDo not include commentary outside JSON.",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        2736,
+        208
+      ],
+      "id": "dd76b64c-0111-4a4a-871b-e599c176901e",
+      "name": "Generate Final Interview Brief"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        2704,
+        448
+      ],
+      "id": "e0ca9fce-b501-4855-906e-42ac0195610d",
+      "name": "OpenAI Chat Model2",
+      "credentials": {
+        "openAiApi": {
+          "id": "6VodX8z277PglBiU",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"company\": \"Figma\",\n  \"role_level\": \"Senior Product Manager\",\n  \"executive_summary\": \"A concise summary of the most important interview-relevant findings.\",\n  \"company_priorities\": [\n    \"Priority 1\",\n    \"Priority 2\"\n  ],\n  \"product_strategy_signals\": [\n    {\n      \"signal\": \"AI-enabled product expansion\",\n      \"why_it_matters\": \"This may shape roadmap, differentiation, and PM interview discussion.\"\n    }\n  ],\n  \"likely_pm_interview_themes\": [\n    \"Product strategy\",\n    \"Execution and metrics\",\n    \"Customer empathy\"\n  ],\n  \"likely_interview_questions\": [\n    {\n      \"question\": \"How would you evaluate a new AI feature for this product?\",\n      \"question_type\": \"Product strategy\",\n      \"how_to_answer\": \"Anchor on user segment, problem, success metrics, risks, and tradeoffs.\"\n    }\n  ],\n  \"strong_talking_points\": [\n    \"The company appears to be investing in AI as a product and workflow accelerator.\"\n  ],\n  \"product_opportunity_hypotheses\": [\n    {\n      \"hypothesis\": \"There may be opportunity to improve enterprise AI governance workflows.\",\n      \"why_it_is_plausible\": \"Source summaries mention admin controls and customer content sharing settings.\"\n    }\n  ],\n  \"risks_or_unknowns\": [\n    \"The source set may overrepresent official company messaging.\"\n  ],\n  \"recommended_notebooklm_prompts\": [\n    \"Based only on the sources, identify the company's top strategic priorities.\"\n  ],\n  \"thirty_minute_prep_plan\": [\n    {\n      \"minutes\": \"0-10\",\n      \"activity\": \"Review company strategy and top product signals.\"\n    }\n  ],\n  \"final_candidate_advice\": \"Focus your interview answers on strategy, customer impact, metrics, and tradeoffs.\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        2912,
+        432
+      ],
+      "id": "363fc341-c731-4ec9-abe2-80503e649dca",
+      "name": "Structured Output Parser2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const briefItem = $input.first().json;\nconst manifestItem = $('Generate Source Manifest').first().json;\n\nconst brief = briefItem.output || briefItem;\n\nfunction cleanMarkdown(value) {\n  return String(value || \"\")\n    .replace(/\\r\\n/g, \"\\n\")\n    .replace(/\\\\r\\\\n/g, \"\\n\")\n    .replace(/\\\\n/g, \"\\n\")\n    .replace(/\\\\t/g, \"\\t\")\n    .replace(/\\n{3,}/g, \"\\n\\n\")\n    .trim();\n}\n\nconst finalMarkdown = `# ${manifestItem.company} PM Interview Prep Brief\n\n## Role Context\n\n- Company: ${manifestItem.company}\n- Target Role: ${manifestItem.role_level}\n- Industry / Space: ${manifestItem.industry}\n- Research Depth: ${manifestItem.research_depth}\n- Sources Reviewed: ${manifestItem.source_count}\n\n---\n\n## Executive Summary\n\n${brief.executive_summary}\n\n---\n\n## Company Priorities\n\n${(brief.company_priorities || []).map(item => `- ${item}`).join(\"\\n\")}\n\n---\n\n## Product Strategy Signals\n\n${(brief.product_strategy_signals || []).map(item => `\n### ${item.signal}\n\n${item.why_it_matters}\n`).join(\"\\n\")}\n\n---\n\n## Likely PM Interview Themes\n\n${(brief.likely_pm_interview_themes || []).map(item => `- ${item}`).join(\"\\n\")}\n\n---\n\n## Likely Interview Questions\n\n${(brief.likely_interview_questions || []).map(item => `\n### ${item.question}\n\n**Type:** ${item.question_type}\n\n**How to Answer:** ${item.how_to_answer}\n`).join(\"\\n\")}\n\n---\n\n## Strong Talking Points\n\n${(brief.strong_talking_points || []).map(item => `- ${item}`).join(\"\\n\")}\n\n---\n\n## Product Opportunity Hypotheses\n\n${(brief.product_opportunity_hypotheses || []).map(item => `\n### ${item.hypothesis}\n\n${item.why_it_is_plausible}\n`).join(\"\\n\")}\n\n---\n\n## Risks / Unknowns to Validate\n\n${(brief.risks_or_unknowns || []).map(item => `- ${item}`).join(\"\\n\")}\n\n---\n\n## Recommended NotebookLM Prompts\n\n${(brief.recommended_notebooklm_prompts || []).map(item => `- ${item}`).join(\"\\n\")}\n\n---\n\n## 30-Minute Prep Plan\n\n${(brief.thirty_minute_prep_plan || []).map(item => `\n### ${item.minutes}\n\n${item.activity}\n`).join(\"\\n\")}\n\n---\n\n## Final Candidate Advice\n\n${brief.final_candidate_advice}\n`;\n\nconst cleanedMarkdown = cleanMarkdown(finalMarkdown);\n\nreturn [\n  {\n    json: {\n      company: manifestItem.company,\n      role_level: manifestItem.role_level,\n      industry: manifestItem.industry,\n      research_depth: manifestItem.research_depth,\n      source_count: manifestItem.source_count,\n      top_sources: manifestItem.top_sources,\n      interview_brief: brief,\n      final_markdown: cleanedMarkdown\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3088,
+        208
+      ],
+      "id": "2f73fce1-0fc5-4692-9ae6-3ee140ceb2a1",
+      "name": "Merge Final Deliverables"
+    },
+    {
+      "parameters": {
+        "folderId": "13XoM4qPSU7U9rz1WMbL0PBOt0OTiG4RQ",
+        "title": "={{ $json.company }} PM Interview Prep Brief"
+      },
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        3296,
+        208
+      ],
+      "id": "4e14fd26-b85a-4888-9086-4a73e2b9fd6d",
+      "name": "Create Google Interview Brief Doc",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "vg4suziTmU1mlBsh",
+          "name": "Google Docs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const doc = $('Create Google Interview Brief Doc').first().json;\nconst brief = $('Merge Final Deliverables').first().json;\n\nfunction cleanText(value) {\n  return String(value || \"\")\n    .replace(/\\\\\\\\n/g, \"\\n\")\n    .replace(/\\\\n/g, \"\\n\")\n    .replace(/\\\\\\\\t/g, \"\\t\")\n    .replace(/\\\\t/g, \"\\t\")\n    .replace(/\\r\\n/g, \"\\n\")\n    .replace(/\\n{3,}/g, \"\\n\\n\")\n    .trim();\n}\n\nfunction processBold(text, baseIndex, styleRequests) {\n  let output = \"\";\n  let cursor = 0;\n  const regex = /\\*\\*(.*?)\\*\\*/g;\n  let match;\n\n  while ((match = regex.exec(text)) !== null) {\n    output += text.slice(cursor, match.index);\n\n    const boldText = match[1];\n    const boldStart = baseIndex + output.length;\n    output += boldText;\n    const boldEnd = baseIndex + output.length;\n\n    styleRequests.push({\n      updateTextStyle: {\n        range: {\n          startIndex: boldStart,\n          endIndex: boldEnd\n        },\n        textStyle: {\n          bold: true\n        },\n        fields: \"bold\"\n      }\n    });\n\n    cursor = match.index + match[0].length;\n  }\n\n  output += text.slice(cursor);\n  return output;\n}\n\nconst rawMarkdown = cleanText(brief.final_markdown);\nconst lines = rawMarkdown.split(\"\\n\");\n\nlet finalText = \"\";\nconst formattingRequests = [];\n\nfor (const line of lines) {\n  const lineStart = 1 + finalText.length;\n  let outputLine = line;\n  let paragraphStyle = null;\n  let makeBullet = false;\n\n  if (line.startsWith(\"# \")) {\n    outputLine = line.replace(/^# /, \"\");\n    paragraphStyle = \"HEADING_1\";\n  } else if (line.startsWith(\"## \")) {\n    outputLine = line.replace(/^## /, \"\");\n    paragraphStyle = \"HEADING_2\";\n  } else if (line.startsWith(\"### \")) {\n    outputLine = line.replace(/^### /, \"\");\n    paragraphStyle = \"HEADING_3\";\n  } else if (line.trim() === \"---\") {\n    outputLine = \"────────────────────────────\";\n  } else if (line.startsWith(\"- \")) {\n    outputLine = line.replace(/^- /, \"\");\n    makeBullet = true;\n  }\n\n  outputLine = processBold(outputLine, lineStart, formattingRequests);\n\n  finalText += outputLine + \"\\n\";\n\n  const lineEnd = 1 + finalText.length;\n\n  if (paragraphStyle) {\n    formattingRequests.push({\n      updateParagraphStyle: {\n        range: {\n          startIndex: lineStart,\n          endIndex: lineEnd\n        },\n        paragraphStyle: {\n          namedStyleType: paragraphStyle\n        },\n        fields: \"namedStyleType\"\n      }\n    });\n  }\n\n  if (makeBullet && outputLine.trim()) {\n    formattingRequests.push({\n      createParagraphBullets: {\n        range: {\n          startIndex: lineStart,\n          endIndex: lineEnd\n        },\n        bulletPreset: \"BULLET_DISC_CIRCLE_SQUARE\"\n      }\n    });\n  }\n}\n\nreturn [\n  {\n    json: {\n      document_id: doc.id,\n      request_body: {\n        requests: [\n          {\n            insertText: {\n              location: {\n                index: 1\n              },\n              text: finalText.trim()\n            }\n          },\n          ...formattingRequests\n        ]\n      }\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3504,
+        208
+      ],
+      "id": "c9ddfa89-0a08-4b1b-997a-4ef82b542b3f",
+      "name": "Prepare Google Docs Insert Payload"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://docs.googleapis.com/v1/documents/{{ $json.document_id }}:batchUpdate",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDocsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.request_body) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        3696,
+        208
+      ],
+      "id": "1b9c2e9a-5064-419b-bec2-514d057defc0",
+      "name": "Insert Brief Content into Google Doc",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "vg4suziTmU1mlBsh",
+          "name": "Google Docs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Create a deep strategic research packet for NotebookLM using the following high-quality research sources.\n\nYour goal is to synthesize the sources into a highly useful interview preparation knowledge base for a product management candidate.\n\nThe output should include:\n\n1. Company strategic priorities\n2. Product strategy signals and themes\n3. Competitive landscape insights\n4. Market dynamics\n5. Organizational or leadership signals\n6. Potential PM interview themes\n7. Likely product sense interview areas\n8. Likely execution interview areas\n9. Likely behavioral interview areas\n10. Product opportunities implied by the research\n11. Risks or strategic unknowns\n12. Contradictions or differing perspectives across sources\n13. Important quotes, data points, or observations from the sources\n14. A synthesized “what this means for a PM candidate” section\n15. A detailed NotebookLM-ready research knowledge base section that summarizes the important insights from EACH source individually\n\nCompany:\n{{ $('Normalize Intake Data').first().json.company_name }}\n\nRole:\n{{ $('Normalize Intake Data').first().json.role_level }}\n\nIndustry:\n{{ $('Normalize Intake Data').first().json.industry }}\n\nResearch Sources:\n{{ JSON.stringify($input.all().map(i => i.json), null, 2) }}",
+        "options": {
+          "systemMessage": "You are an elite AI research analyst helping create a deep research packet for NotebookLM.\n\nYour job is to transform raw web research sources into rich strategic research material for interview preparation.\n\nFor EACH source provided:\n\n1. Summarize the source in detail\n2. Extract key strategic/product/business insights\n3. Explain why the source matters for a Product Manager interview\n4. Extract likely interview themes\n5. Extract competitive/product/company insights\n6. Include the most important source snippets or evidence\n7. Identify product strategy implications\n8. Explain what an interview candidate should learn from the source\n\nWrite in a structured markdown format.\n\nDO NOT be brief.\nDO NOT summarize across sources.\nTreat each source as a standalone research artifact.\n\nOutput rich, NotebookLM-friendly research material."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        2032,
+        128
+      ],
+      "id": "e4fa901c-e884-4e6b-87e8-d7c80e50b243",
+      "name": "Generate Deep Source Research Packet"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        2032,
+        336
+      ],
+      "id": "4331b5c0-dce6-4350-9f59-7b6bba6a715f",
+      "name": "OpenAI Chat Model3",
+      "credentials": {
+        "openAiApi": {
+          "id": "6VodX8z277PglBiU",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "folderId": "13XoM4qPSU7U9rz1WMbL0PBOt0OTiG4RQ",
+        "title": "={{ $json.company }} Full Research Packet"
+      },
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        2752,
+        -48
+      ],
+      "id": "a4d775ac-c8de-4b5d-8cfd-83c784ffc4e2",
+      "name": "Create Research Packet Doc",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "vg4suziTmU1mlBsh",
+          "name": "Google Docs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const doc = $('Create Research Packet Doc').first().json;\nconst manifest = $('Generate Source Manifest').first().json;\n\nfunction cleanText(value) {\n  return String(value || \"\")\n    .replace(/\\\\\\\\n/g, \"\\n\")\n    .replace(/\\\\n/g, \"\\n\")\n    .replace(/\\\\\\\\t/g, \"\\t\")\n    .replace(/\\\\t/g, \"\\t\")\n    .replace(/\\r\\n/g, \"\\n\")\n    .replace(/\\n{3,}/g, \"\\n\\n\")\n    .trim();\n}\n\nconst researchPacketMarkdown = `# ${manifest.company} Full Research Packet\n\n## Interview Context\n\n- Company: ${manifest.company}\n- Target Role Level: ${manifest.role_level}\n- Industry / Space: ${manifest.industry}\n- Research Depth: ${manifest.research_depth}\n- Sources Selected: ${manifest.source_count}\n\n---\n\n## Deep Source Research Packet\n\n${manifest.deep_research_packet || \"No deep research packet available.\"}\n\n---\n\n## Source Manifest\n\n${manifest.manifest_markdown || \"\"}\n`;\n\nconst cleanPacket = cleanText(researchPacketMarkdown);\n\nreturn [\n  {\n    json: {\n      document_id: doc.id,\n      request_body: {\n        requests: [\n          {\n            insertText: {\n              location: {\n                index: 1\n              },\n              text: cleanPacket\n            }\n          }\n        ]\n      }\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2960,
+        -48
+      ],
+      "id": "b0a9a221-b6d8-430a-9058-0fad9376d423",
+      "name": "Prepare Research Packet Payload"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://docs.googleapis.com/v1/documents/{{ $json.document_id }}:batchUpdate",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDocsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.request_body) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        3168,
+        -48
+      ],
+      "id": "c44e087c-e6a2-4c36-9cd7-8733b68f2d12",
+      "name": "Insert Research Packet Content",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "vg4suziTmU1mlBsh",
+          "name": "Google Docs account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Normalize Intake Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Intake Data": {
+      "main": [
+        [
+          {
+            "node": "Research Planning Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Research Planning Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Research Planning Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Research Planning Agent": {
+      "main": [
+        [
+          {
+            "node": "Extract Search Queries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Search Queries": {
+      "main": [
+        [
+          {
+            "node": "Tavily Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tavily Search": {
+      "main": [
+        [
+          {
+            "node": "Flatten Search Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Flatten Search Results": {
+      "main": [
+        [
+          {
+            "node": "Deduplicate Sources",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deduplicate Sources": {
+      "main": [
+        [
+          {
+            "node": "Source Quality Scoring Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Source Quality Scoring Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser1": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Source Quality Scoring Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Source Quality Scoring Agent": {
+      "main": [
+        [
+          {
+            "node": "Merge Source Scores",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Source Scores": {
+      "main": [
+        [
+          {
+            "node": "Filter High-Value Sources",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter High-Value Sources": {
+      "main": [
+        [
+          {
+            "node": "Sort Sources by Quality",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sort Sources by Quality": {
+      "main": [
+        [
+          {
+            "node": "Limit Top Sources",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit Top Sources": {
+      "main": [
+        [
+          {
+            "node": "Generate Deep Source Research Packet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Source Manifest": {
+      "main": [
+        [
+          {
+            "node": "Create Research Packet Doc",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Generate Final Interview Brief",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate Final Interview Brief",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser2": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Generate Final Interview Brief",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Final Interview Brief": {
+      "main": [
+        [
+          {
+            "node": "Merge Final Deliverables",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Final Deliverables": {
+      "main": [
+        [
+          {
+            "node": "Create Google Interview Brief Doc",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Google Interview Brief Doc": {
+      "main": [
+        [
+          {
+            "node": "Prepare Google Docs Insert Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Google Docs Insert Payload": {
+      "main": [
+        [
+          {
+            "node": "Insert Brief Content into Google Doc",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Deep Source Research Packet": {
+      "main": [
+        [
+          {
+            "node": "Generate Source Manifest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate Deep Source Research Packet",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Research Packet Doc": {
+      "main": [
+        [
+          {
+            "node": "Prepare Research Packet Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Research Packet Payload": {
+      "main": [
+        [
+          {
+            "node": "Insert Research Packet Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "6a1f4743-2ece-4ce1-ab90-0675e252939a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "88b7a8b38a44e9675c489c99705a7d61053b95d7ad22e8c917901d856909164a"
+  },
+  "id": "rYVCr88ejGmxgv7Y",
+  "tags": []
+}
