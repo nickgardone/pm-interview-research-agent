@@ -1,0 +1,14 @@
+# Excel files — contain personal application data
+*.xlsx
+*.xlsm
+~$*
+
+# Runtime logs
+*.log
+
+# Python
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store
