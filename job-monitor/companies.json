@@ -21,8 +21,8 @@
   },
   {
     "name": "Superhuman",
-    "type": "playwright",
-    "url": "https://superhuman.com/company/careers/jobs",
+    "type": "ashby",
+    "org_name": "Superhuman Platform Inc",
     "filter": "product"
   }
 ]

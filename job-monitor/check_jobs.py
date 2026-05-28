@@ -112,78 +112,54 @@ def fetch_workday(company: dict) -> list[dict]:
     return jobs
 
 
-def fetch_playwright(company: dict) -> list[dict]:
-    from playwright.sync_api import sync_playwright
+def fetch_ashby(company: dict) -> list[dict]:
+    org_name = company["org_name"]  # e.g. "Superhuman Platform Inc"
+    keyword = company["filter"].lower()
+    org_slug = org_name.replace(" ", "%20")
+
+    payload = {
+        "operationName": "ApiJobBoardWithTeams",
+        "variables": {"organizationHostedJobsPageName": org_name},
+        "query": """
+        query ApiJobBoardWithTeams($organizationHostedJobsPageName: String!) {
+          jobBoard: jobBoardWithTeams(
+            organizationHostedJobsPageName: $organizationHostedJobsPageName
+          ) {
+            jobPostings {
+              id title teamId locationId locationName
+            }
+          }
+        }
+        """,
+    }
+    resp = requests.post(
+        "https://jobs.ashbyhq.com/api/non-user-graphql",
+        json=payload,
+        headers={
+            "Content-Type": "application/json",
+            "Referer": f"https://jobs.ashbyhq.com/{org_slug}?embed=js",
+        },
+        timeout=30,
+    )
+    resp.raise_for_status()
 
     jobs = []
-    keyword = company["filter"].lower()
-    page_url = company["url"]
-
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
-        page.goto(page_url, wait_until="domcontentloaded", timeout=60_000)
-        page.wait_for_timeout(6_000)  # allow client-side JS to render job listings
-
-        # Collect any links pointing to known ATS domains
-        ats_domains = ["greenhouse.io", "lever.co", "ashbyhq.com", "myworkdayjobs.com"]
-        links = page.eval_on_selector_all(
-            "a[href]",
-            """els => els.map(el => ({
-                href: el.href,
-                text: el.innerText.trim()
-            }))""",
-        )
-        seen_urls = set()
-        for link in links:
-            href = link.get("href", "")
-            text = link.get("text", "").strip()
-            if not text or not href:
-                continue
-            if any(d in href for d in ats_domains) and keyword in text.lower():
-                if href not in seen_urls:
-                    seen_urls.add(href)
-                    # Stable ID: company slug + cleaned title
-                    slug = text.lower().replace(" ", "-")[:80]
-                    jobs.append({
-                        "id": f"playwright-{company['name'].lower()}-{slug}",
-                        "company": company["name"],
-                        "title": text,
-                        "url": href,
-                    })
-
-        # Fallback: check headings that look like real job titles (not nav items)
-        if not jobs:
-            JOB_TITLE_WORDS = {
-                "manager", "director", "engineer", "designer", "analyst",
-                "lead", "senior", "staff", "principal", "head of", "vp",
-                "associate", "specialist", "coordinator", "strategist",
-            }
-            headings = page.eval_on_selector_all(
-                "h2, h3, h4",
-                "els => els.map(el => el.innerText.trim())",
-            )
-            for heading in headings:
-                lower = heading.lower()
-                has_keyword = keyword in lower
-                has_job_word = any(w in lower for w in JOB_TITLE_WORDS)
-                if has_keyword and has_job_word and 20 < len(heading) < 120:
-                    slug = lower.replace(" ", "-")[:80]
-                    jobs.append({
-                        "id": f"playwright-{company['name'].lower()}-{slug}",
-                        "company": company["name"],
-                        "title": heading,
-                        "url": page_url,
-                    })
-
-        browser.close()
+    for job in resp.json()["data"]["jobBoard"]["jobPostings"]:
+        title = job.get("title", "")
+        if keyword in title.lower():
+            jobs.append({
+                "id": f"ashby-{job['id']}",
+                "company": company["name"],
+                "title": title,
+                "url": f"https://jobs.ashbyhq.com/{org_slug}/{job['id']}",
+            })
     return jobs
 
 
 FETCHERS = {
     "greenhouse": fetch_greenhouse,
     "workday": fetch_workday,
-    "playwright": fetch_playwright,
+    "ashby": fetch_ashby,
 }
 
 
