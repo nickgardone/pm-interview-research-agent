@@ -21,7 +21,8 @@ from openpyxl.styles import Font, PatternFill
 BASE    = Path("/Users/nickgardone/Documents/Business/Career/Applications")
 TRACKER = BASE / "Nick Application Tracker.xlsx"
 LOG_FILE = BASE / "job_search.log"
-SHEET   = "Job Opportunities"
+SHEET        = "Job Opportunities"
+TRACKER_NAME = "Nick Application Tracker.xlsx"
 
 # ── API pricing (claude-sonnet-4-6) ───────────────────────────────────────────
 INPUT_PRICE_PER_MTOK  = 3.00   # $ per million input tokens
@@ -80,6 +81,27 @@ def notify(title: str, message: str) -> None:
         "osascript", "-e",
         f'display notification "{message}" with title "{title}"'
     ], check=False)
+
+
+def close_in_excel() -> None:
+    """Close the tracker in Excel (saving user edits first) so openpyxl can write cleanly."""
+    script = f'''
+    tell application "Microsoft Excel"
+        if it is running then
+            set wb to (workbooks whose name is "{TRACKER_NAME}")
+            if (count of wb) > 0 then
+                close item 1 of wb saving yes
+            end if
+        end if
+    end tell
+    '''
+    subprocess.run(["osascript", "-e", script], check=False)
+
+
+def open_in_excel() -> None:
+    """Reopen the tracker in Excel after the script has written new rows."""
+    script = f'tell application "Microsoft Excel" to open "{TRACKER}"'
+    subprocess.run(["osascript", "-e", script], check=False)
 
 
 def normalize(text: str) -> str:
@@ -253,8 +275,12 @@ def main() -> None:
     if new_listings:
         next_row = ws.max_row + 1
         append_rows(ws, new_listings, max_num + 1, next_row)
+        log.info("Closing tracker in Excel...")
+        close_in_excel()
         wb.save(TRACKER)
         log.info(f"Saved. Rows added: {next_row}–{next_row + len(new_listings) - 1}")
+        open_in_excel()
+        log.info("Reopened tracker in Excel")
 
     log.info(f"── Done. {len(new_listings)} added, {dupes} duplicates skipped ──\n")
     notify(
