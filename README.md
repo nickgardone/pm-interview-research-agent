@@ -1,16 +1,25 @@
-# PM Interview Company Research Agent
+# Company Research Agent
 
-An N8N workflow that generates NotebookLM-ready research packets for PM interview preparation.
+An N8N workflow that orchestrates multi-source web research and AI synthesis to produce structured intelligence packets ready for import into Google NotebookLM.
 
 ## What it does
 
-Given a company name, role URL, and seniority level (PM / Senior PM / Staff PM / Lead PM), the workflow compiles structured research from multiple sources into a format ready to import into NotebookLM for deep interview prep.
+Given a company name, a job posting URL, and a seniority level (PM / Senior PM / Staff PM / Lead PM), the workflow:
+1. Fetches data from multiple web sources in parallel
+2. Synthesizes findings into a structured research packet
+3. Formats the output for direct import into NotebookLM
 
-## How to use
+## Stack
 
-1. Import the workflow JSON from `PM-Interview-Company-Research-Agent/latest version/` into your N8N instance
-2. Fill in the form: company name, job posting URL, and role level
-3. The workflow outputs a research packet ready for NotebookLM import
+- **N8N** — workflow orchestration and scheduling
+- **Google NotebookLM** — AI-powered synthesis layer
+- **Web APIs** — multi-source data ingestion
+
+## Usage
+
+1. Import the workflow JSON from `Company-Research-Agent/latest version/` into your N8N instance
+2. Fill in the form: company name, role URL, and seniority level
+3. Import the output packet into NotebookLM
 
 ## Version history
 
